@@ -74,6 +74,7 @@ var d3map = d3map || {};
     svg.call(zoom);
     
     //Show a menu on the map
+    /* FIXME: the config should not be part of d3map */
     function menu(obj,feat){
         var feature = feat;
         var loc = d3.mouse(obj);
@@ -592,10 +593,10 @@ d3map.rasterlayer.prototype.redraw = function(){
             var url = "";
             if (self._type == 'tms'){
                 url = self._url
-                    .replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 4 | 0])
-                    .replace('%7Bz%7D',d[2])
-                    .replace('%7Bx%7D',d[0])
-                    .replace('%7By%7D',d[1]);
+                    .replace('{s}',["a", "b", "c", "d"][Math.random() * 4 | 0])
+                    .replace('{z}',d[2])
+                    .replace('{x}',d[0])
+                    .replace('{y}',d[1]);
             }
             else if (self._type == 'wms'){
                 //This calculation only works for tiles that are square and always the same size
@@ -1134,7 +1135,7 @@ Cop_utils.menu = function(feat, event, container, element, config){
    }
 };
 //Adding some Backbone event binding functionality to the store
-_.extend(Cop_utils.menu.prototype, Events);
+//_.extend(Cop_utils.menu.prototype, Events);
 
 Cop_utils.populator = function(feature){
  //TODO   

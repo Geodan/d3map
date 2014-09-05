@@ -181,7 +181,7 @@ Cop_utils.menu = function(feat, event, container, element, config){
    }
 };
 //Adding some Backbone event binding functionality to the store
-_.extend(Cop_utils.menu.prototype, Events);
+//_.extend(Cop_utils.menu.prototype, Events);
 
 Cop_utils.populator = function(feature){
  //TODO   
