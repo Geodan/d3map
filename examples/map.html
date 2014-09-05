@@ -1,0 +1,33 @@
+<html>
+<head>
+<script src="../lib/d3.v3.min.js"></script>
+<script src="../lib/d3.geo.tile.v0.min.js"></script>
+<script src="../lib/simplify.js"></script>
+<script src="../lib/underscore-min.js"></script>
+<script src="../dist/d3map.js"></script>
+</head>
+<body>
+
+<svg id="map" width = '100%' height = '100%'></svg>
+
+<script>
+    var svg = document.getElementsByTagName('svg')[0];
+    var map = new d3map.map(svg,{center: [5,52],zoom: 22});
+    var layer = new d3map.rasterlayer('layer1', map, {
+            type: 'tms',
+            url: "http://{s}.tiles.mapbox.com/v3/examples.map-i86nkdio/{z}/{x}/{y}.png"
+         });
+    map.addLayer(layer);
+    map.redraw();
+    
+    //this.map.resize([this.clientWidth, this.clientHeight]);
+    window.addEventListener("resize",function(){
+     
+        map.resize([self.width,self.height]);
+        map.redraw();
+    }); 
+</script>
+
+</body>
+
+</html>

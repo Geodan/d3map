@@ -74,6 +74,7 @@ var d3map = d3map || {};
     svg.call(zoom);
     
     //Show a menu on the map
+    /* FIXME: the config should not be part of d3map */
     function menu(obj,feat){
         var feature = feat;
         var loc = d3.mouse(obj);
