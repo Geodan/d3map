@@ -1,6 +1,7 @@
 <html>
 <head>
 <script src="../lib/d3.v3.min.js"></script>
+<script src="../lib/topojson.v1.min.js"></script>
 <script src="../lib/d3.geo.tile.v0.min.js"></script>
 <script src="../lib/simplify.js"></script>
 <script src="../lib/underscore-min.js"></script>
@@ -8,16 +9,75 @@
 </head>
 <body>
 
-<svg id="map" width = '100%' height = '100%'></svg>
+<div id="map" width = '100%' height = '100%'></div>
 
 <script>
-    var svg = document.getElementsByTagName('svg')[0];
-    var map = new d3map.map(svg,{center: [5,52],zoom: 22});
+    var map = new d3map.map('map',{center: [5,52],zoom: 22});
     var layer = new d3map.rasterlayer('layer1', map, {
             type: 'tms',
             url: "http://{s}.tiles.mapbox.com/v3/examples.map-i86nkdio/{z}/{x}/{y}.png"
          });
     map.addLayer(layer);
+    var layer = new d3map.vectorlayer2('layer2', map, {
+        type: 'path',
+        labels: false,
+        opacity: 1,
+        visible: true,
+        labelconfig: {
+            field: 'name',
+            minzoom: 171157,
+            style: {
+                stroke: 'steelBlue'
+            }
+        },
+        style: {
+            'fill-opacity':0.5,
+            'stroke-width': 1,
+            stroke: 'steelBlue',
+            fill: 'steelBlue'
+        }
+        
+    });
+    d3.json('./data/gemeenten.topojson', function(e, data){
+       if (e) return console.error(e);
+       var coll = topojson.feature(data,data.objects.gemeenten);
+       coll.features.forEach(function(d,i){
+               d.id = i;
+       });
+       layer.data(coll.features);   
+    });
+    map.addLayer(layer);
+    
+    var layer = new d3map.vectorlayer('layer3', map, {
+        type: 'path',
+        labels: false,
+        opacity: 1,
+        visible: true,
+        labelconfig: {
+            field: 'name',
+            minzoom: 171157,
+            style: {
+                stroke: 'steelBlue'
+            }
+        },
+        style: {
+            'fill-opacity':0.5,
+            'stroke-width': 1,
+            stroke: 'crimson',
+            fill: 'crimson'
+        }
+        
+    });
+    d3.json('./data/gemeenten.topojson', function(e, data){
+       if (e) return console.error(e);
+       var coll = topojson.feature(data,data.objects.gemeenten);
+       coll.features.forEach(function(d,i){
+               d.id = i;
+       });
+       layer.data(coll.features);   
+    });
+    map.addLayer(layer);
+    
     map.redraw();
     
     //this.map.resize([this.clientWidth, this.clientHeight]);

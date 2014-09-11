@@ -4,13 +4,13 @@ var d3map = d3map || {};
   "use strict";
 
   
-  d3map.map = function(elem, config){
+  d3map.map = function(divid, config){
     var self = this;
     this._layers = [];
     
     var width = Math.max(960, window.innerWidth),
     height = Math.max(500, window.innerHeight);
-    this.elem = elem;
+    this.divid = divid;
     var tile = d3.geo.tile()
         .size([width, height]);
     this.tile = tile;
@@ -19,6 +19,11 @@ var d3map = d3map || {};
         .scale(( config.zoom << 12 || 1 << 12) / 2 / Math.PI)
         .translate([width / 2, height / 2]);
     this.projection = projection;
+    
+    var projection2 = d3.geo.mercator()
+        .scale(1 / 2 / Math.PI)
+        .translate([0, 0]);
+    this.projection2 = projection2;
         
     var center = projection(config.center || [0,0]);
     this.center = center;
@@ -26,6 +31,10 @@ var d3map = d3map || {};
     var path = d3.geo.path()
         .projection(projection);
     this.path = path;
+    
+    var path_transform = d3.geo.path()
+        .projection(projection2);
+    this.path_transform = path_transform;
     
     function redraw() {
       var tiles = tile
@@ -36,15 +45,15 @@ var d3map = d3map || {};
           .scale(zoom.scale() / 2 / Math.PI)
           .translate(zoom.translate());
      
-      //vector
-      //    .attr("d", path);
-     //vector
-     // .attr("transform", "translate(" + zoom.translate() + ")scale(" + zoom.scale() + ")")
-     // .style("stroke-width", 1 / zoom.scale());
-     //TODO: compare with transform option:
-     //http://bl.ocks.org/mbostock/5914438
+      vector_transform
+      .attr("transform", "translate(" + zoom.translate() + ")scale(" + zoom.scale() + ")")
+      .style("stroke-width", 1 / zoom.scale());
+      //compare projection with transform option:
+      //http://bl.ocks.org/mbostock/5914438
+     
       raster
           .attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
+          
       self.layers().forEach(function(d){
           d.refresh();
       });
@@ -56,178 +65,33 @@ var d3map = d3map || {};
         .scaleExtent([1 << 8, 1 << 24])
         .translate([width - center[0], height - center[1]])
         .on("zoom", redraw);
-    this.zoom = zoom; 
-    var svg = d3.select(elem)//d3.select("body").append("svg")
+    this.zoom = zoom;
+    
+    // With the center computed, now adjust the projection such that
+    // it uses the zoom behavior’s translate and scale.
+    //projection
+    //    .scale(1 / 2 / Math.PI)
+    //    .translate([0, 0]);
+    
+    var svg = d3.select('#'+divid).append('svg')//d3.select("body").append("svg")
         .attr("width", width)
         .attr("height", height);
     this.svg = svg;
-    svg.on('click', function(){
-        self.svg.selectAll('.popup').remove();
-        //menu(this);
-    });
+    
     var raster = svg.append("g").attr('id', 'raster');
     this.raster = raster;
     
     var vector = svg.append("g").attr('id', 'vector');
     this.vector = vector;
     
+    var vector_transform = svg.append("g").attr('id', 'vector_transform');
+    this.vector_transform = vector_transform;
+    
+    var canvas = d3.select('#'+divid).append('canvas')
+     .attr("width", width)  
+     .attr("height", height);  
+    
     svg.call(zoom);
-    
-    //Show a menu on the map
-    /* FIXME: the config should not be part of d3map */
-    function menu(obj,feat){
-        var feature = feat;
-        var loc = d3.mouse(obj);
-        d3.event.stopPropagation();
-        self.svg.selectAll('.popup').remove();
-        var g = self.svg.append('g');
-        g.attr('class','popup')
-        .attr("transform", function(z){
-            var x = loc[0];
-            var y = loc[1];
-            return "translate(" + x + "," + y + ")";
-        });
-        var menuconfig = {
-             "name": "root",
-             "children": [{
-                  name: "model.populator",
-                  icon: './images/menuicons/users_icon.png',
-                  label: "Populatie",
-                  size: 1,
-                  action: function(feature){
-                      //TODO
-                  }
-              },{
-                  name: "edit.geom",        
-                  icon: './images/menuicons/pencil_icon.png',
-                  label: 'Bewerken',
-                  value: 1, 
-                  action: function(feature){
-                      self.draw({feature:feature});
-                  }
-             },{
-                  name: "delete",
-                  icon: './images/menuicons/clipboard_cut_icon.png',
-                  label: 'Verwijderen',
-                  value: 1,
-                  action: function(feature){
-                      core.project().items(feature.id).deleted(true).sync();
-                  }
-             },{
-                  name: "edit.text",
-                  icon: './images/menuicons/text_letter_t_icon.png',
-                  label: "Tekst",
-                  size: 1,
-                  action: function(feature){
-                      //TODO
-                  }
-             }]
-        };
-        var data = menuconfig; 
-        width = 150;
-        height = 150;
-        var radius = Math.min(width, height) / 2;
-        var partition = d3.layout.partition()
-            .sort(null)
-            .size([2 * Math.PI, radius * radius])
-            .value(function(d) { return d.value || 1; });
-        var arc = d3.svg.arc()
-            .startAngle(function(d) { return d.x; })
-            .endAngle(function(d) { return d.x + d.dx; })
-            .innerRadius(function(d) { return Math.sqrt(d.y * 0.7); })
-            .outerRadius(function(d) {
-                return Math.sqrt((d.y + d.dy)*1.5);
-        });
-        var color = d3.scale.category10();
-        var entity = g.append('g');
-        var chart = entity.append('g')
-            .classed('pie popup',true)
-            .attr('width',width)
-            .attr('height',height)
-            .append('g')
-            .attr('class','zoomable');
-            
-         g = chart.datum(data).selectAll("arc1")
-            .data(partition.nodes)
-            .enter().append("g")
-            .attr("class", "arc1")
-            .on('click', function(d, feat){
-                 self.svg.selectAll('.popup').remove();
-                 d3.event.stopPropagation();//Prevent the map from firing click event as well
-                 var action = d.action;
-                 if (d.action){
-                     action(feature);
-                 }
-                 else{
-                     console.warn('No action defined for menu item');
-                 }
-                 //self.trigger(name, {fid: fid, layer: feature, obj: d});
-            })
-            .on('mouseover', function(d){ //Mouseover menulabel
-                d3.select(this)
-                     .append("text")
-                      .classed('menu_shadow',true)
-                      //.attr("transform", function(d) { return "translate(" + arc.centroid(d) + ")"; })
-                      .attr("dy", 0)
-                      .attr("dx", 0)
-                      .text(function(d) { 
-                              return d.label; 
-                      });
-                d3.select(this)
-                 .append("text")
-                  .classed('menu',true)
-                  //.attr("transform", function(d) { return "translate(" + arc.centroid(d) + ")"; })
-                  .attr("dy", 0)
-                  .attr("dx", 0)
-                  .text(function(d) { 
-                          return d.label; 
-                  });
-                  
-            })
-            .on('mouseout', function(d){
-                d3.select(this)
-                    .style('opacity',1)
-                    .selectAll('text').remove();
-            });
-            
-        g.append("path")
-            .style('opacity',0)
-            .transition()
-            .style('opacity',1)
-            .attr("d", function(d){
-                return arc(d);
-            })
-            
-            .style("stroke", "#fff")
-            .style("fill", function(d) {
-                if (d.name == 'root') {
-                    return 'none';
-                }
-                else if (d.parent && d.parent.name == 'P'){
-                    return 'none';
-                }
-                else if (d.parent && d.parent.name == 'root'){
-                    return color(d.name);
-                }
-                else{ 
-                    return color(d.name);
-                }
-            });
-            
-            
-        g.append("svg:image")
-            .attr("transform", function(d) { return "translate(" + arc.centroid(d) + ")"; })
-           .attr('x',-9)
-           .attr('y',-12)
-           .attr('width', 20)
-           .attr('height', 24)
-           .attr("xlink:href",function(d){
-                   return d.icon;
-           });
-    }
-    this.menu = menu;
-    
-    
     
     function resize(size){
         this.tile.size(size);
