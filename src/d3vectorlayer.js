@@ -40,7 +40,7 @@ var d3map = d3map || {};
 	var style = this._style;
 	var labels = this._labels;
 	var labelconfig = this._labelconfig;
-	var tooltipdiv = d3.select(self._map.elem.parentElement)
+	var tooltipdiv = d3.select('#'+self._map.divid)
 	    .append('div')
 	    .attr('id', 'tooltipdiv')
 	    .style('position', 'absolute');
@@ -75,11 +75,10 @@ var d3map = d3map || {};
             .style('top', '-100px');
     };
 	
-	
-	var click = function(d,e){
-	    self._map.menu(this,d);
-	};
-	
+    var click = function(d){
+        //do nothing.....
+    };
+    
 	 //Build up the element
     var build = function(d){
       var entity = d3.select(this);
@@ -259,7 +258,7 @@ var d3map = d3map || {};
    
   //On update
   entities.each(styling);
-    
+
   //On exit
   entities.exit().remove().transition().duration(500);
   this.refresh(); //position the features
@@ -272,10 +271,11 @@ d3map.vectorlayer.prototype.refresh = function(){
     var self = this;
     var entities = this._map.vector.select('#' + this._id).selectAll(".entity");
     var path = this._map.path;
+    var zoom = this._map.zoom;
     var textLocation = this.textLocation;
     var labels = this._labels;
     var pathStyler = this.pathStyler;
-    this._map.vector.select('#' + this._id).style('opacity',this._opacity);
+    
     entities.each(function(d,i){
         var entity = d3.select(this);
         
@@ -304,6 +304,7 @@ d3map.vectorlayer.prototype.refresh = function(){
                 .attr("y", textLocation(d)[1] );
         }
     });
+    
 };
 
 

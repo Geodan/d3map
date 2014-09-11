@@ -4,13 +4,13 @@ var d3map = d3map || {};
   "use strict";
 
   
-  d3map.map = function(elem, config){
+  d3map.map = function(divid, config){
     var self = this;
     this._layers = [];
     
     var width = Math.max(960, window.innerWidth),
     height = Math.max(500, window.innerHeight);
-    this.elem = elem;
+    this.divid = divid;
     var tile = d3.geo.tile()
         .size([width, height]);
     this.tile = tile;
@@ -19,6 +19,11 @@ var d3map = d3map || {};
         .scale(( config.zoom << 12 || 1 << 12) / 2 / Math.PI)
         .translate([width / 2, height / 2]);
     this.projection = projection;
+    
+    var projection2 = d3.geo.mercator()
+        .scale(1 / 2 / Math.PI)
+        .translate([0, 0]);
+    this.projection2 = projection2;
         
     var center = projection(config.center || [0,0]);
     this.center = center;
@@ -26,6 +31,10 @@ var d3map = d3map || {};
     var path = d3.geo.path()
         .projection(projection);
     this.path = path;
+    
+    var path_transform = d3.geo.path()
+        .projection(projection2);
+    this.path_transform = path_transform;
     
     function redraw() {
       var tiles = tile
@@ -36,15 +45,15 @@ var d3map = d3map || {};
           .scale(zoom.scale() / 2 / Math.PI)
           .translate(zoom.translate());
      
-      //vector
-      //    .attr("d", path);
-     //vector
-     // .attr("transform", "translate(" + zoom.translate() + ")scale(" + zoom.scale() + ")")
-     // .style("stroke-width", 1 / zoom.scale());
-     //TODO: compare with transform option:
-     //http://bl.ocks.org/mbostock/5914438
+      vector_transform
+      .attr("transform", "translate(" + zoom.translate() + ")scale(" + zoom.scale() + ")")
+      .style("stroke-width", 1 / zoom.scale());
+      //compare projection with transform option:
+      //http://bl.ocks.org/mbostock/5914438
+     
       raster
           .attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
+          
       self.layers().forEach(function(d){
           d.refresh();
       });
@@ -56,178 +65,33 @@ var d3map = d3map || {};
         .scaleExtent([1 << 8, 1 << 24])
         .translate([width - center[0], height - center[1]])
         .on("zoom", redraw);
-    this.zoom = zoom; 
-    var svg = d3.select(elem)//d3.select("body").append("svg")
+    this.zoom = zoom;
+    
+    // With the center computed, now adjust the projection such that
+    // it uses the zoom behavior’s translate and scale.
+    //projection
+    //    .scale(1 / 2 / Math.PI)
+    //    .translate([0, 0]);
+    
+    var svg = d3.select('#'+divid).append('svg')//d3.select("body").append("svg")
         .attr("width", width)
         .attr("height", height);
     this.svg = svg;
-    svg.on('click', function(){
-        self.svg.selectAll('.popup').remove();
-        //menu(this);
-    });
+    
     var raster = svg.append("g").attr('id', 'raster');
     this.raster = raster;
     
     var vector = svg.append("g").attr('id', 'vector');
     this.vector = vector;
     
+    var vector_transform = svg.append("g").attr('id', 'vector_transform');
+    this.vector_transform = vector_transform;
+    
+    var canvas = d3.select('#'+divid).append('canvas')
+     .attr("width", width)  
+     .attr("height", height);  
+    
     svg.call(zoom);
-    
-    //Show a menu on the map
-    /* FIXME: the config should not be part of d3map */
-    function menu(obj,feat){
-        var feature = feat;
-        var loc = d3.mouse(obj);
-        d3.event.stopPropagation();
-        self.svg.selectAll('.popup').remove();
-        var g = self.svg.append('g');
-        g.attr('class','popup')
-        .attr("transform", function(z){
-            var x = loc[0];
-            var y = loc[1];
-            return "translate(" + x + "," + y + ")";
-        });
-        var menuconfig = {
-             "name": "root",
-             "children": [{
-                  name: "model.populator",
-                  icon: './images/menuicons/users_icon.png',
-                  label: "Populatie",
-                  size: 1,
-                  action: function(feature){
-                      //TODO
-                  }
-              },{
-                  name: "edit.geom",        
-                  icon: './images/menuicons/pencil_icon.png',
-                  label: 'Bewerken',
-                  value: 1, 
-                  action: function(feature){
-                      self.draw({feature:feature});
-                  }
-             },{
-                  name: "delete",
-                  icon: './images/menuicons/clipboard_cut_icon.png',
-                  label: 'Verwijderen',
-                  value: 1,
-                  action: function(feature){
-                      core.project().items(feature.id).deleted(true).sync();
-                  }
-             },{
-                  name: "edit.text",
-                  icon: './images/menuicons/text_letter_t_icon.png',
-                  label: "Tekst",
-                  size: 1,
-                  action: function(feature){
-                      //TODO
-                  }
-             }]
-        };
-        var data = menuconfig; 
-        width = 150;
-        height = 150;
-        var radius = Math.min(width, height) / 2;
-        var partition = d3.layout.partition()
-            .sort(null)
-            .size([2 * Math.PI, radius * radius])
-            .value(function(d) { return d.value || 1; });
-        var arc = d3.svg.arc()
-            .startAngle(function(d) { return d.x; })
-            .endAngle(function(d) { return d.x + d.dx; })
-            .innerRadius(function(d) { return Math.sqrt(d.y * 0.7); })
-            .outerRadius(function(d) {
-                return Math.sqrt((d.y + d.dy)*1.5);
-        });
-        var color = d3.scale.category10();
-        var entity = g.append('g');
-        var chart = entity.append('g')
-            .classed('pie popup',true)
-            .attr('width',width)
-            .attr('height',height)
-            .append('g')
-            .attr('class','zoomable');
-            
-         g = chart.datum(data).selectAll("arc1")
-            .data(partition.nodes)
-            .enter().append("g")
-            .attr("class", "arc1")
-            .on('click', function(d, feat){
-                 self.svg.selectAll('.popup').remove();
-                 d3.event.stopPropagation();//Prevent the map from firing click event as well
-                 var action = d.action;
-                 if (d.action){
-                     action(feature);
-                 }
-                 else{
-                     console.warn('No action defined for menu item');
-                 }
-                 //self.trigger(name, {fid: fid, layer: feature, obj: d});
-            })
-            .on('mouseover', function(d){ //Mouseover menulabel
-                d3.select(this)
-                     .append("text")
-                      .classed('menu_shadow',true)
-                      //.attr("transform", function(d) { return "translate(" + arc.centroid(d) + ")"; })
-                      .attr("dy", 0)
-                      .attr("dx", 0)
-                      .text(function(d) { 
-                              return d.label; 
-                      });
-                d3.select(this)
-                 .append("text")
-                  .classed('menu',true)
-                  //.attr("transform", function(d) { return "translate(" + arc.centroid(d) + ")"; })
-                  .attr("dy", 0)
-                  .attr("dx", 0)
-                  .text(function(d) { 
-                          return d.label; 
-                  });
-                  
-            })
-            .on('mouseout', function(d){
-                d3.select(this)
-                    .style('opacity',1)
-                    .selectAll('text').remove();
-            });
-            
-        g.append("path")
-            .style('opacity',0)
-            .transition()
-            .style('opacity',1)
-            .attr("d", function(d){
-                return arc(d);
-            })
-            
-            .style("stroke", "#fff")
-            .style("fill", function(d) {
-                if (d.name == 'root') {
-                    return 'none';
-                }
-                else if (d.parent && d.parent.name == 'P'){
-                    return 'none';
-                }
-                else if (d.parent && d.parent.name == 'root'){
-                    return color(d.name);
-                }
-                else{ 
-                    return color(d.name);
-                }
-            });
-            
-            
-        g.append("svg:image")
-            .attr("transform", function(d) { return "translate(" + arc.centroid(d) + ")"; })
-           .attr('x',-9)
-           .attr('y',-12)
-           .attr('width', 20)
-           .attr('height', 24)
-           .attr("xlink:href",function(d){
-                   return d.icon;
-           });
-    }
-    this.menu = menu;
-    
-    
     
     function resize(size){
         this.tile.size(size);
@@ -673,7 +537,7 @@ d3map.rasterlayer.prototype.refresh = function(){
 	var style = this._style;
 	var labels = this._labels;
 	var labelconfig = this._labelconfig;
-	var tooltipdiv = d3.select(self._map.elem.parentElement)
+	var tooltipdiv = d3.select('#'+self._map.divid)
 	    .append('div')
 	    .attr('id', 'tooltipdiv')
 	    .style('position', 'absolute');
@@ -708,11 +572,10 @@ d3map.rasterlayer.prototype.refresh = function(){
             .style('top', '-100px');
     };
 	
-	
-	var click = function(d,e){
-	    self._map.menu(this,d);
-	};
-	
+    var click = function(d){
+        //do nothing.....
+    };
+    
 	 //Build up the element
     var build = function(d){
       var entity = d3.select(this);
@@ -892,7 +755,7 @@ d3map.rasterlayer.prototype.refresh = function(){
    
   //On update
   entities.each(styling);
-    
+
   //On exit
   entities.exit().remove().transition().duration(500);
   this.refresh(); //position the features
@@ -905,10 +768,11 @@ d3map.vectorlayer.prototype.refresh = function(){
     var self = this;
     var entities = this._map.vector.select('#' + this._id).selectAll(".entity");
     var path = this._map.path;
+    var zoom = this._map.zoom;
     var textLocation = this.textLocation;
     var labels = this._labels;
     var pathStyler = this.pathStyler;
-    this._map.vector.select('#' + this._id).style('opacity',this._opacity);
+    
     entities.each(function(d,i){
         var entity = d3.select(this);
         
@@ -937,6 +801,7 @@ d3map.vectorlayer.prototype.refresh = function(){
                 .attr("y", textLocation(d)[1] );
         }
     });
+    
 };
 
 
@@ -952,6 +817,387 @@ d3map.vectorlayer.prototype.data = function(data){
 	this._data = data;
 	this.redraw();
 };
+})();;var d3map = d3map || {};
+
+(function(){
+  "use strict";
+        
+  /**
+	d3map.layer 
+  **/
+  d3map.vectorlayer2 = function(id, map, config){
+    _.extend(this, d3map.layer);
+	this._data = config.data;
+	this._id = id;
+	this._map = map;
+	this._r = config.r;
+	this._type = config.type || 'path';
+	this._maxzoom = config.maxzoom;
+	this._minzoom = config.minzoom;
+	this._labels = config.labels || false;
+	this._labelconfig = config.labelconfig;
+	this._style = config.style || {};
+	this._g = this._map.vector_transform.append('g').attr('id',this._id); //now we have a layer to add data on
+	this._onmouseover = config.onmouseover;
+	this._onclick = config.onclick;
+	this._mouseoverContent = config.mouseoverContent;
+	this._opacity = config.opacity || 1;
+	this._isvisible = config.visible || true;
+  };
+
+  d3map.vectorlayer2.prototype.clear = function(){
+      var entities = this._map.vector_transform.select('#' + this._id).selectAll(".entity").remove();
+  };
+  
+  d3map.vectorlayer2.prototype.redraw = function(){
+	var projection = this._map.projection;
+	this.projection = projection;
+	var pointprojection = this._map.pointprojection;
+	var clicked = this._map.clicked;
+	var path = this._map.path_transform;
+	var self = this;
+	var style = this._style;
+	var labels = this._labels;
+	var labelconfig = this._labelconfig;
+	var tooltipdiv = d3.select('#'+self._map.divid)
+	    .append('div')
+	    .attr('id', 'tooltipdiv')
+	    .style('position', 'absolute');
+	var mouseover = function(d){
+        if (!d.origopac){
+            d.origopac = d3.select(this).style('opacity');
+        }
+        d3.select(this)
+            .transition().duration(100)
+            .style('opacity',d.origopac * 0.2);
+        
+        var content = '';
+        _(d.properties).each(function(value,key){
+                content = content + '<b>' + key + '</b>' + value + '<br>';
+        });
+        tooltipdiv.transition()        
+            .duration(200)      
+            .style("opacity", 0.9);      
+        tooltipdiv.html(content + "<br/>")  
+            .style("left", (d3.event.pageX) + "px")     
+            .style("top", (d3.event.pageY - 28) + "px");
+    };
+    
+    var mouseout = function(d){
+        d3.select(this)
+            .transition().duration(100)
+            .style('opacity',d.origopac);
+        tooltipdiv.transition()        
+            .duration(500)      
+            .style("opacity", 0);
+        tooltipdiv.transition().delay(1500)
+            .style('top', '-100px');
+    };
+	
+    var click = function(d){
+        //do nothing.....
+    };
+    
+	 //Build up the element
+    var build = function(d){
+      var entity = d3.select(this);
+      //Point/icon feature
+      if (d.style && d.style['marker-url'] && d.geometry.type == 'Point'){ 
+          var x = projection(d.geometry.coordinates)[0];
+          var y = projection(d.geometry.coordinates)[1];
+          var img = entity.append("image")
+                //.transition().duration(500)
+                .on("click", click)
+                .on('mouseover',mouseover)
+                .on('mouseout',mouseout);
+      }
+      //Path feature
+      else{
+        var path = entity.append("path")
+            .attr("d",pathStyler(d))
+            //.transition().duration(500)
+            .on("click", click)
+            .on('mouseover',mouseover)
+            .on('mouseout',mouseout);
+      }
+    };
+        
+    //A per feature styling method
+    var styling = function(d){
+      var entity = d3.select(this);
+      //Point/icon feature
+      if (d.style && d.style['marker-url'] && d.geometry.type == 'Point'){ 
+          var x = projection(d.geometry.coordinates)[0];
+          var y = projection(d.geometry.coordinates)[1];
+          var img = entity.select("image")
+                .attr("xlink:href", function(d){
+                        return d.style['marker-url'];
+                })
+                .classed("nodeimg",true)
+                .attr("width", 32)
+                .attr("height", 37)
+                .style('opacity',function(d){ //special case: opacity for icon
+                        return d.style.opacity || style.opacity || 1;
+                });
+         
+      }
+      //Path feature
+      else{                 
+        var path = entity.select("path");
+        _(style).each(function(val, key) { 
+            if (key == 'stroke-width'){return;} //since stroke-width is handled in the transform of vector_transform, disregard it here
+            //First check for generic layer style
+            path.style(key,function(d){
+                
+                    if (typeof(style[key]) == "function") {
+                        var f = style[key];
+                        return  f(d);
+                    }
+                    else {//..or by generic style string
+                        return style[key]; 
+                    }
+            });
+        });
+        //Now apply style in feature
+        _(d.style).each(function(val, key){
+                path.style(key,val);
+        });
+      }
+    };
+    //A per feature styling method
+    var textstyling = function(d){
+        var obj = this;
+        _(labelconfig.style).each(function(val, key) { //First check for generic layer style
+            d3.select(obj).style(key,function(d){
+                if (d.labelconfig && d.labelconfig.style && d.labelconfig.style[key]){
+                    return d.labelconfig.style[key]; //Override with features style if present
+                }
+                else {	
+                    return labelconfig.style[key]; //Apply generic style
+                }
+            });
+        });
+        //Now apply remaining styles of feature (possible doing a bit double work from previous loop)
+        if (d.labelconfig && d.labelconfig.style) { //If feature has style information
+            _(d.labelconfig.style).each(function(val, key){ //run through the styles
+                d3.select(obj).style(key,d.labelconfig.style[key]); //and apply them
+            });
+        }
+    };
+    //Some path specific styles (point radius, label placement eg.)
+    var pathStyler = function(d){ 
+        if (d.style && d.style.radius){
+            path.pointRadius(d.style.radius);
+        }
+        else if (style && style.radius){
+            path.pointRadius(style.radius);
+        }
+        return path(d);
+    };
+    this.pathStyler = pathStyler;
+    //Calculating the location of the label, based on settings
+    var textLocation = function(d){
+        var textLocation = path.centroid(d);
+        var bounds = path.bounds(d);
+        if (style && style.textlocation){
+            switch(style.textlocation){
+              case 'ul':
+                textLocation[0] = bounds[0][0];
+                textLocation[1] = bounds[0][1];
+                break;
+              case 'ur':
+                textLocation[0] = bounds[1][0];
+                textLocation[1] = bounds[1][1];
+                break;
+              //TODO: add other positions
+            }
+        }
+        else {
+            textLocation[1] = textLocation[1] + 20; //a bit down..
+        }
+        return textLocation;
+    };
+    this.textLocation = textLocation;
+	//TODO move out of core
+    var labelgenerator = function(d){
+        if (labelconfig.field && d.properties){
+            var str = d.properties[labelconfig.field];
+            if (str && str.length > 10) {
+                  return str.substr(0,16) + "..."; //Only first 16 chars
+            }
+            else {
+                return str;
+            }
+        }
+        else {
+            return d.id;
+        }
+    };
+	this.labelgenerator = labelgenerator;
+    
+    
+    var entities = this._map.vector_transform.select('#' + this._id).selectAll(".entity")
+        .data(this._data, function(d) {
+            return d.id;
+        });
+        
+    if (this._isvisible){
+        //On enter
+        var newentity = entities.enter()
+            .append("g")
+            .classed('entity',true)
+            .attr('id',function(d){
+                    return 'entity'+ d.id;
+            });
+        newentity.each(build);
+       
+        if (labels){
+            var label = newentity.append('g')
+                .classed('place-label',true);
+            //On new:	
+            label
+                .append('text')
+                .attr("x",function(d) {return textLocation(d)[0] ;})
+                .attr("y",function(d) {return textLocation(d)[1] ;})
+                .attr('text-anchor', 'left')
+                .style('stroke','white')
+                .style('stroke-width','3px')
+                .style('stroke-opacity',0.8)
+                .text(function(d){return labelgenerator(d);});
+            label
+                .append('text')
+                .attr("x",function(d) {return textLocation(d)[0] ;})
+                .attr("y",function(d) {return textLocation(d)[1] ;})
+                .attr('text-anchor', 'left')
+                .each(textstyling)
+                .text(function(d){return labelgenerator(d);});
+      } //End of new label
+   }
+   else {
+       entities.remove();
+   }
+   
+  //On update
+  entities.each(styling);
+
+  //On exit
+  entities.exit().remove().transition().duration(500);
+  this.refresh(); //position the features
+};
+
+/**
+    layer.refresh() - relocated the features after zoom
+**/
+d3map.vectorlayer2.prototype.refresh = function(){
+    var self = this;
+    var entities = this._map.vector_transform.select('#' + this._id).selectAll(".entity");
+    var path = this._map.path_transform;
+    var zoom = this._map.zoom;
+    var textLocation = this.textLocation;
+    var labels = this._labels;
+    var pathStyler = this.pathStyler;
+    /*
+    entities.each(function(d,i){
+        var entity = d3.select(this);
+        
+        var x = path.centroid(d)[0];
+        var y = path.centroid(d)[1];
+        
+        if (d.style && d.style['marker-url'] && d.geometry.type == 'Point'){
+            entity.select('image')
+                .attr("x",x-12.5)
+                .attr("y",y-25);
+        }
+        else{
+            entity.select('path') //Only 1 path per entity
+                .attr("d",pathStyler(d));
+        }
+        
+        if (labels){
+            var opacity = 1;
+            if (self._labelconfig && self._labelconfig.minzoom && self._map.zoom.scale() < self._labelconfig.minzoom){
+                opacity =0;
+            }
+            entity.select('.place-label')
+                .style('opacity',opacity)
+                .selectAll('text')
+                .attr("x", textLocation(d)[0] )
+                .attr("y", textLocation(d)[1] );
+        }
+    });
+    */
+};
+
+
+/** 
+	layer.data(features) - adds/replaces features for specific layer
+**/
+d3map.vectorlayer2.prototype.data = function(data){
+	var projection = this._map.projection;
+	var pointprojection = this._map.pointprojection;
+	var clicked = this._map.clicked;
+	var self = this;
+	var style = this._style;
+	this._data = data;
+	this.redraw();
+};
+})();;var d3map = d3map || {};
+
+(function(){
+  "use strict";
+        
+  /**
+	d3map.layer 
+  **/
+  d3map.canvaslayer = function(id, map, config){
+    _.extend(this, d3map.layer);
+	this._data = config.data;
+	this._id = id;
+	this._map = map;
+	this._r = config.r;
+	this._type = config.type || 'path';
+	this._maxzoom = config.maxzoom;
+	this._minzoom = config.minzoom;
+	this._labels = config.labels || false;
+	this._labelconfig = config.labelconfig;
+	this._style = config.style || {};
+	this._g = this._map.vector.append('g').attr('id',this._id); //now we have a layer to add data on
+	this._onmouseover = config.onmouseover;
+	this._onclick = config.onclick;
+	this._mouseoverContent = config.mouseoverContent;
+	this._opacity = config.opacity || 1;
+	this._isvisible = config.visible || true;
+  };
+
+  d3map.canvaslayer.prototype.clear = function(){
+      
+  };
+  
+  d3map.canvaslayer.prototype.redraw = function(){
+      var canvas = this._map.canvas;
+	  var context = canvas.node().getContext("2d");
+  };
+
+  /**
+      layer.refresh() - relocated the features after zoom
+  **/
+  d3map.canvaslayer.prototype.refresh = function(){
+      
+  };
+
+
+  /** 
+  	layer.data(features) - adds/replaces features for specific layer
+  **/
+  d3map.canvaslayer.prototype.data = function(data){
+  	var projection = this._map.projection;
+  	var pointprojection = this._map.pointprojection;
+  	var clicked = this._map.clicked;
+  	var self = this;
+  	var style = this._style;
+  	this._data = data;
+  	this.redraw();
+  };
 })();;//Replacing editpopup:
 var Cop = window.Cop || {};
 Cop_utils = {};
