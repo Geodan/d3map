@@ -36,7 +36,7 @@ var d3map = d3map || {};
         .projection(projection2);
     this.path_transform = path_transform;
     
-    function redraw() {
+    function draw() {
       var tiles = tile
           .scale(zoom.scale())
           .translate(zoom.translate())();
@@ -58,13 +58,13 @@ var d3map = d3map || {};
           d.refresh();
       });
     }
-    this.redraw = redraw;
+    this.draw = draw;
  
     var zoom = d3.behavior.zoom()
         .scale(projection.scale() * 2 * Math.PI)
         .scaleExtent([1 << 8, 1 << 24])
         .translate([width - center[0], height - center[1]])
-        .on("zoom", redraw);
+        .on("zoom", draw);
     this.zoom = zoom;
     
     // With the center computed, now adjust the projection such that
@@ -131,7 +131,7 @@ var d3map = d3map || {};
     }
     this.removeLayer = removeLayer;
     
-
+    /* This shouldn't be in map
     function drawpoint(me){
        var icon = self.vector.append('g').attr('id', 'drawpointer').append('image')
             .attr("xlink:href", self.curUrl)
@@ -178,7 +178,7 @@ var d3map = d3map || {};
                    //Feature only changes coordinates
                    self.feature.geometry.coordinates = coords;
                    core.project().items(self.feature.id).data('feature', self.feature).sync();
-                   self.redraw();
+                   self.draw();
                }
            }
            else {
@@ -188,30 +188,6 @@ var d3map = d3map || {};
     }
     
     function drawline(){
-        //TT: not sure if this pointer adds to the user experience...
-        /*
-        var icon = self.vector.append('g').attr('id', 'drawpointer'); 
-        if (self.curType == 'Linestring'){
-            icon.append('line')
-                .attr('x1',0).attr('y1',0)
-                .attr('x2',20).attr('y2',20)
-                .style('stroke', self.curStroke)
-                .style('stroke-width', 4);
-        } else if (self.curType == 'Polygon'){
-            icon.append('polygon')
-                .attr('points',"22,1 30,21 17,25 12,23")
-                .style('stroke', self.curStroke)
-                .style('fill', self.curFill)
-                .style('fill-opacity', 0.5)
-                .style('stroke-width', 4);
-        }
-        
-        
-       //Make the icon follow the pointer
-       self.svg.on('mousemove', function(d){
-           var loc  = d3.mouse(this);
-           icon.attr('transform',"translate("+ (loc[0] -15) + ","+ (loc[1] -15)+ ")");
-       });*/
         var npoints = 100;
         var ptdata = [];
         var line = d3.svg.line()
@@ -314,7 +290,7 @@ var d3map = d3map || {};
                         //Feature only changes coordinates
                        self.feature.geometry.coordinates = coords;
                        core.project().items(self.feature.id).data('feature', self.feature).sync();
-                       self.redraw();
+                       self.draw();
                     }
                 }
                 else {
@@ -387,6 +363,7 @@ var d3map = d3map || {};
         }
     }
     this.draw = draw;
+    */
     return this;
 };
 })();

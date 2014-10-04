@@ -3,10 +3,10 @@ var d3map = d3map || {};
 (function(){
   "use strict";
 /**
-	d3map.rasterlayer 
+	d3map.Rasterlayer 
 **/
-d3map.rasterlayer = function(id, map, config){
-    _.extend(this, d3map.layer);
+d3map.Rasterlayer = function(id, map, config){
+    d3map.Layer.call(this, id, map);
     this._id = id;
     this._type = config.type;
     this._url = config.url;
@@ -15,10 +15,13 @@ d3map.rasterlayer = function(id, map, config){
     this._opacity = 1;
     this._isvisible = true;
 };
-d3map.rasterlayer.prototype.clear = function(){
+
+d3map.Rasterlayer.prototype = Object.create(d3map.Layer.prototype);
+
+d3map.Rasterlayer.prototype.clear = function(){
     var image = this._map.raster.selectAll("."+ this._id).remove();
 };
-d3map.rasterlayer.prototype.redraw = function(){
+d3map.Rasterlayer.prototype.draw = function(){
     var self = this;
     var tiles = this._map.tiles;
     var raster = this._map.raster;
@@ -65,10 +68,10 @@ d3map.rasterlayer.prototype.redraw = function(){
         image.exit().remove();
 };
 
-d3map.rasterlayer.prototype.refresh = function(){
+d3map.Rasterlayer.prototype.refresh = function(){
     var raster = this._map.raster;
     var image = raster.selectAll("."+ this._id);
     image.style('opacity', this._opacity);
-    this.redraw();
+    this.draw();
 };
 })();
