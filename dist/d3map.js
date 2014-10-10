@@ -4,13 +4,13 @@ var d3map = d3map || {};
   "use strict";
 
   
-  d3map.map = function(divid, config){
+  d3map.map = function(elem, config){
     var self = this;
     this._layers = [];
     
     var width = Math.max(960, window.innerWidth),
     height = Math.max(500, window.innerHeight);
-    this.divid = divid;
+    
     var tile = d3.geo.tile()
         .size([width, height]);
     this.tile = tile;
@@ -73,7 +73,7 @@ var d3map = d3map || {};
     //    .scale(1 / 2 / Math.PI)
     //    .translate([0, 0]);
     
-    var svg = d3.select('#'+divid).append('svg')//d3.select("body").append("svg")
+    var svg = d3.select(elem).append('svg')//d3.select("body").append("svg")
         .attr("width", width)
         .attr("height", height);
     this.svg = svg;
@@ -87,7 +87,7 @@ var d3map = d3map || {};
     var vector_transform = svg.append("g").attr('id', 'vector_transform');
     this.vector_transform = vector_transform;
     
-    var canvas = d3.select('#'+divid).append('canvas')
+    var canvas = d3.select(elem).append('canvas')
      .attr("width", width)  
      .attr("height", height);  
     
@@ -429,11 +429,17 @@ d3map.Rasterlayer.prototype.draw = function(){
           .attr("xlink:href", function(d) {
             var url = "";
             if (self._type == 'tms'){
-                url = self._url
+                url = self._url    
                     .replace('{s}',["a", "b", "c", "d"][Math.random() * 4 | 0])
                     .replace('{z}',d[2])
                     .replace('{x}',d[0])
-                    .replace('{y}',d[1]);
+                    .replace('{y}',d[1])
+                    //FIXME: why are these curly brackets killed when used with polymer?
+                    .replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 4 | 0])
+                    .replace('%7Bz%7D',d[2])
+                    .replace('%7Bx%7D',d[0])
+                    .replace('%7By%7D',d[1]);
+                    
             }
             else if (self._type == 'wms'){
                 //This calculation only works for tiles that are square and always the same size
