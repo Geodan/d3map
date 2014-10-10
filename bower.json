@@ -1,0 +1,31 @@
+{
+  "name": "d3map",
+  "version": "0.0.1",
+  "homepage": "https://github.com/tomvantilburg/d3map",
+  "description": "Webmap based on d3",
+  "keywords": [
+    "d3",
+    "map",
+    "raster",
+    "vector"
+  ],
+  "authors": [
+    "Tom van Tilburg"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "d3": "~3.4.11",
+    "d3-plugins": "*",
+    "underscore": "~1.7.0",
+    "simplify-js": "https://github.com/mourner/simplify-js.git",
+    "topojson": "~1.6.18",
+    "d3-carto-map": "https://github.com/emeeks/d3-carto-map.git"
+  }
+}

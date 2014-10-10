@@ -1,10 +1,11 @@
+<meta http-equiv="content-type" content="text/html; charset=UTF8">
 <html>
 <head>
-<script src="../lib/d3.v3.min.js"></script>
-<script src="../lib/topojson.v1.min.js"></script>
-<script src="../lib/d3.geo.tile.v0.min.js"></script>
-<script src="../lib/simplify.js"></script>
-<script src="../lib/underscore-min.js"></script>
+<script src="../bower_components/d3/d3.js"></script>
+<script src="../bower_components/topojson/topojson.js"></script>
+<script src="../bower_components/d3-plugins/geo/tile/tile.js"></script>
+<script src="../bower_components/simplify-js/simplify.js"></script>
+<script src="../bower_components/underscore/underscore-min.js"></script>
 <script src="../dist/d3map.js"></script>
 </head>
 <body>
@@ -13,12 +14,14 @@
 
 <script>
     var map = new d3map.map('map',{center: [5,52],zoom: 22});
-    var layer = new d3map.rasterlayer('layer1', map, {
+    
+    var layer = new d3map.Rasterlayer('layer1', map, {
             type: 'tms',
             url: "http://{s}.tiles.mapbox.com/v3/examples.map-i86nkdio/{z}/{x}/{y}.png"
          });
     map.addLayer(layer);
-    var layer = new d3map.vectorlayer2('layer2', map, {
+    
+    var layer = new d3map.Vectorlayer('layer2', map, {
         type: 'path',
         labels: false,
         opacity: 1,
@@ -48,7 +51,7 @@
     });
     map.addLayer(layer);
     
-    var layer = new d3map.vectorlayer('layer3', map, {
+    var layer = new d3map.Vectorlayer('layer3', map, {
         type: 'path',
         labels: false,
         opacity: 1,
@@ -68,6 +71,7 @@
         }
         
     });
+    /*
     d3.json('./data/gemeenten.topojson', function(e, data){
        if (e) return console.error(e);
        var coll = topojson.feature(data,data.objects.gemeenten);
@@ -77,14 +81,14 @@
        layer.data(coll.features);   
     });
     map.addLayer(layer);
-    
-    map.redraw();
+    */
+    map.draw();
     
     //this.map.resize([this.clientWidth, this.clientHeight]);
     window.addEventListener("resize",function(){
      
         map.resize([self.width,self.height]);
-        map.redraw();
+        map.draw();
     }); 
 </script>
 

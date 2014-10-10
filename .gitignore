@@ -3,3 +3,4 @@ Gruntfile.js
 package.json
 node_modules
 .npm-debug.log
+bower_components
