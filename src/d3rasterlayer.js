@@ -35,11 +35,17 @@ d3map.Rasterlayer.prototype.draw = function(){
           .attr("xlink:href", function(d) {
             var url = "";
             if (self._type == 'tms'){
-                url = self._url
+                url = self._url    
                     .replace('{s}',["a", "b", "c", "d"][Math.random() * 4 | 0])
                     .replace('{z}',d[2])
                     .replace('{x}',d[0])
-                    .replace('{y}',d[1]);
+                    .replace('{y}',d[1])
+                    //FIXME: why are these curly brackets killed when used with polymer?
+                    .replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 4 | 0])
+                    .replace('%7Bz%7D',d[2])
+                    .replace('%7Bx%7D',d[0])
+                    .replace('%7By%7D',d[1]);
+                    
             }
             else if (self._type == 'wms'){
                 //This calculation only works for tiles that are square and always the same size
