@@ -65,7 +65,7 @@ d3map.Rasterlayer.prototype.draw = function(){
           //Remove all we got
           image.remove();
       }
-        image.exit().remove();
+      image.exit().remove();
 };
 
 d3map.Rasterlayer.prototype.refresh = function(){

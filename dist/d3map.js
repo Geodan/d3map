@@ -383,12 +383,12 @@ var d3map = d3map || {};
           return this._id;
       },
       setOpacity: function(value){
-            this._opacity = value;
-            this.redraw();
+        this._opacity = value;
+        this.draw();
       },
       setVisibility: function(value){
         this._isvisible = value;
-        this.redraw();
+        this.draw();
         this.refresh();
       }
   }; 
@@ -459,7 +459,7 @@ d3map.Rasterlayer.prototype.draw = function(){
           //Remove all we got
           image.remove();
       }
-        image.exit().remove();
+      image.exit().remove();
 };
 
 d3map.Rasterlayer.prototype.refresh = function(){
